@@ -1,58 +1,59 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: nginx-service
+  name: nginx
   labels:
     app: nginx
 spec:
+  type: NodePort
   ports:
     - port: 80
+      nodePort: 30080
   selector:
     app: nginx
-  clusterIP: None
-
 ---
-
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: nginx-pv-volume
+  labels:
+    app: nginx
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/data/app-data"
+---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: nginx-pv-claim
-  labels:
-    app: nginx
 spec:
+  storageClassName: manual
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 2Gi
-
+      storage: 3Gi
 ---
-
-apiVersion: apps/v1
-kind: Deployment
+apiVersion: v1
+kind: Pod
 metadata:
-  name: nginx-deploy
-  labels:
-    app: nginx
+  name: nginx
 spec:
-  replicas: 2
-  selector: 
-    matchLabels:
-      app: nginx
-  template:
-    metadata:
-      labels:
-        app: nginx
-    spec:
-      containers: 
-      - name: nginx
-        image: nginx
-        ports:
-        - containerPort: 80
-        volumeMounts:
-          - name: nginx-vol
-            mountPath: /usr/share/nginx/html/
-       volumes:
-       - name: nginx-vol
-         persistentVolumeClaim:
-           claimName: nginx-pv-claim
+  volumes:
+    - name: nginx-pv-storage
+      persistentVolumeClaim:
+       claimName: nginx-pv-claim
+  containers: 
+    - name: nginx-pod
+      image: nginx:1.14.0
+      ports:
+      - containerPort: 80
+        name: "nginx-server"
+      volumeMounts:
+        - mountPath: /usr/share/nginx/html/
+          name: nginx-pv-storage
