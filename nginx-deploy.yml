@@ -1,23 +1,26 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: nginx
+  name: nginx-service
   labels:
-    app: nginx
+    app: nginx-app
 spec:
   type: NodePort
   ports:
-    - port: 80
-      nodePort: 30080
+  - name: http
+    nodePort: 30080
+    port: 80
+    targetPort: 80
+    protocol: TCP
   selector:
-    app: nginx
+    app: nginx-pod
 ---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
   name: nginx-pv-volume
   labels:
-    app: nginx
+    app: nginx-app
 spec:
   storageClassName: manual
   capacity:
@@ -25,12 +28,14 @@ spec:
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: "/data/app-data"
+    path: "/home/devopscode0/datat/app-data"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: nginx-pv-claim
+  labels:
+    app: nginx-app
 spec:
   storageClassName: manual
   accessModes:
@@ -42,18 +47,20 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  name: nginx
+  name: nginx-pod
+  labels: 
+    app: nginx-app
 spec:
   volumes:
-    - name: nginx-pv-storage
+    - name: nginx-pv-volume
       persistentVolumeClaim:
        claimName: nginx-pv-claim
   containers: 
-    - name: nginx-pod
-      image: nginx:1.14.0
+    - image: nginx
+      name: nginx-pod
       ports:
       - containerPort: 80
         name: "nginx-server"
       volumeMounts:
         - mountPath: /usr/share/nginx/html/
-          name: nginx-pv-storage
+          name: nginx-pv-volume
